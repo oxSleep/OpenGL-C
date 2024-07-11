@@ -11,7 +11,68 @@
 
 #define MAX_SHADER_SIZE 1024
 
-char* parseShaderFile(const char* filePath)
+unsigned int loadShader(const char* vertexPath, const char* fragmentPath);
+char* parseFile(const char* filePath);
+void processInput(GLFWwindow *window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+
+unsigned int loadShader(const char* vertexPath, const char* fragmentPath)
+{
+
+    char* vertex = parseFile(vertexPath);
+    char* fragment = parseFile(fragmentPath);
+
+    if (vertex == NULL || fragment == NULL){
+        return 1;
+    }
+
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    printf("%s\n", vertex);
+    glShaderSource(vertexShader, 1, (const char**)&vertex, NULL);
+    glCompileShader(vertexShader);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        printf("Vertex shader compilation failed.\n%s", infoLog);
+    }
+
+    glShaderSource(fragmentShader, 1, (const char**)&fragment, NULL);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        printf("Fragment shader compilation failed.\n%s", infoLog);
+    }
+
+
+    unsigned int programID;
+    programID = glCreateProgram();
+    glAttachShader(programID, vertexShader);
+    glAttachShader(programID, fragmentShader);
+    glLinkProgram(programID);
+
+    glGetProgramiv(programID, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(programID, 512, NULL, infoLog);
+        printf("Program linking failed.\n%s", infoLog);
+    }
+
+    free(vertex);
+    free(fragment);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return programID;
+}
+
+char* parseFile(const char* filePath)
 {
     FILE *fp;
     size_t fileSize = 0;
@@ -40,9 +101,9 @@ char* parseShaderFile(const char* filePath)
         return NULL;
     }
 
-    printf("Address of buffer: %p\n", (void*)shaderBuffer);
-    printf("%s\n", shaderBuffer);
+    shaderBuffer[fileSize] = '\0';
 
+    printf("Address of buffer: %p\n", (void*)shaderBuffer);
     fclose(fp);
     return shaderBuffer;
 }
